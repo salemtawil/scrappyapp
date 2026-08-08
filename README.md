@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Padel Organizer
 
-## Getting Started
+Mobile-first Next.js app for organizing padel Americanos, Mexicanos, leagues, tournaments, live scoring, public rooms, QR sharing, and CSV exports.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router, React, TypeScript strict mode
+- Tailwind CSS, small shadcn-style primitives, Lucide icons
+- Supabase Auth/Postgres/Realtime via `@supabase/ssr`
+- `postgres` for server-only transactional mutations with `prepare: false`
+- `tods-competition-factory@6.19.0` isolated behind `lib/competitions/courthive`
+- Vitest domain tests and Playwright smoke tests
+
+## Local Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The UI can build without Supabase credentials. Server database operations require `DATABASE_URL`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+DATABASE_URL=
+NEXT_PUBLIC_APP_URL=
+APP_SECRET=
+```
 
-## Learn More
+Do not prefix server secrets with `NEXT_PUBLIC_`.
 
-To learn more about Next.js, take a look at the following resources:
+## Supabase
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a Supabase project from the Vercel Marketplace or Supabase dashboard.
+2. Copy `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and the transaction-pooler `DATABASE_URL`.
+3. Apply migrations from `supabase/migrations`.
+4. Optionally apply `supabase/seed.sql` for demo data.
+5. Add `matches`, `rounds`, `standings`, and `activity_logs` to the Supabase Realtime publication if live updates are enabled.
+6. Review RLS policies before production; public pages should use sanitized DTOs, not raw tables.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`postgres.js` is configured with `prepare: false`, which is required for Supabase transaction pooling in serverless runtimes.
 
-## Deploy on Vercel
+## Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Import the repository as a Next.js project.
+2. Set the environment variables above.
+3. Use Node.js 22 or newer.
+4. Deploy with the default Vercel Next.js build command.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+No Docker, always-on Node server, or custom WebSocket/SSE server is required.
+
+## Quality Gates
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm e2e
+```
+
+## Domain Notes
+
+- Americano and Mexicano scheduling are pure TypeScript modules and do not copy Padelo source.
+- Social scores use fixed total-point validation.
+- Mexicano future rounds are invalidated after historical edits because pairings depend on standings.
+- Leagues use deterministic circle-method schedules.
+- CourtHive stays server-only and returns app-friendly projections instead of leaking upstream types into React.
