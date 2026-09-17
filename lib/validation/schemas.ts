@@ -5,7 +5,7 @@ export const playerDisplayNameSchema = z.string().min(1).max(80);
 
 export const socialSettingsSchema = z.object({
   courtCount: z.number().int().min(1).max(16),
-  targetPoints: z.number().int().min(1).max(99),
+  targetPoints: z.number().int().min(1).max(24),
   roundCount: z.number().int().min(1).max(100).optional(),
   openEnded: z.boolean().default(false),
   seed: z.string().min(1),

@@ -3,7 +3,7 @@ import { demoStandings } from "@/lib/demo-data";
 
 export async function GET() {
   const rows = [
-    ["posicion", "jugador", "puntos", "pj", "g", "diferencia"],
+    ["posicion", "jugador", "games_favor", "pj", "ganados", "diferencia_games"],
     ...demoStandings.map((row, index) => [
       index + 1,
       row.displayName,

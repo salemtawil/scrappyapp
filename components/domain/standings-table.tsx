@@ -8,7 +8,7 @@ export function StandingsTable({ standings }: { standings: SocialStanding[] }) {
           <tr>
             <th className="w-10 py-3">#</th>
             <th>Jugador</th>
-            <th className="text-right">Pts</th>
+            <th className="text-right">GF</th>
             <th className="text-right">PJ</th>
             <th className="text-right">G</th>
             <th className="text-right">+/-</th>

@@ -18,7 +18,10 @@ export default async function DisplayPage({ params }: { params: Promise<{ roomCo
             <p className="text-lime-200">En vivo</p>
             <h1 className="text-3xl font-bold sm:text-5xl">{data.competition.name}</h1>
           </div>
-          <p className="text-5xl font-bold sm:text-7xl">{data.standings[0]?.pointsFor ?? 0}</p>
+          <div className="text-left sm:text-right">
+            <p className="text-sm uppercase text-lime-200">Games lider</p>
+            <p className="text-5xl font-bold sm:text-7xl">{data.standings[0]?.pointsFor ?? 0}</p>
+          </div>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {data.matches.map((match) => (

@@ -6,13 +6,13 @@ export function validateFixedTotalScore(
   targetPoints: number,
 ) {
   if (!Number.isInteger(sideAScore) || !Number.isInteger(sideBScore)) {
-    return "Los puntos deben ser números enteros.";
+    return "Los games deben ser números enteros.";
   }
   if (sideAScore < 0 || sideBScore < 0) {
-    return "Los puntos no pueden ser negativos.";
+    return "Los games no pueden ser negativos.";
   }
   if (sideAScore + sideBScore !== targetPoints) {
-    return `La suma debe ser ${targetPoints}.`;
+    return `La suma de games debe ser ${targetPoints}.`;
   }
   return null;
 }

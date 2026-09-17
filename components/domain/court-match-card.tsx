@@ -21,7 +21,7 @@ export function CourtMatchCard({
           <h3 className="font-semibold">Ronda {match.roundNumber}</h3>
         </div>
         <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-900">
-          Objetivo {match.targetPoints}
+          Games objetivo {match.targetPoints}
         </span>
       </CardHeader>
       <CardContent className="space-y-4">

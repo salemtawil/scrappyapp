@@ -54,7 +54,7 @@ function validateSocialInput(input: GenerateSocialInput) {
     throw new Error("Court count must be between 1 and 16.");
   }
   if (input.targetPoints < 1 || input.targetPoints > 99) {
-    throw new Error("Target points must be between 1 and 99.");
+    throw new Error("Target games must be between 1 and 99.");
   }
 }
 

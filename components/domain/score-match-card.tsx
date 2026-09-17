@@ -25,7 +25,7 @@ export function ScoreMatchCard({
             <h3 className="font-semibold">Ronda {match.roundNumber}</h3>
           </div>
           <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-900">
-            Objetivo {match.targetPoints}
+            Games objetivo {match.targetPoints}
           </span>
         </div>
       </CardHeader>
@@ -71,6 +71,7 @@ function ScoreSide({ inputName, names, score }: { inputName: string; names: stri
         max={99}
         min={0}
         name={inputName}
+        placeholder="Games"
         required
         type="number"
       />

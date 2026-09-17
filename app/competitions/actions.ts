@@ -17,7 +17,7 @@ const createAmericanoSchema = z.object({
   playerIds: z.array(uuidSchema).min(4, "Selecciona al menos 4 jugadores."),
   roundCount: z.coerce.number().int().min(1).max(20),
   startsAt: z.string().optional(),
-  targetPoints: z.coerce.number().int().min(1).max(99),
+  targetPoints: z.coerce.number().int().min(1).max(24),
 });
 
 const scoreSchema = z.object({

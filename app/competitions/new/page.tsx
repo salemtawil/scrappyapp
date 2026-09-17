@@ -21,7 +21,7 @@ export default async function NewCompetitionPage() {
     <AppShell>
       <main className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-3xl font-bold text-emerald-950">Crear competicion</h1>
-        <p className="mt-1 text-slate-600">Arma un Americano social con rotacion de parejas y puntos individuales.</p>
+        <p className="mt-1 text-slate-600">Arma un Americano social con rotacion de parejas y games individuales.</p>
         <div className="mt-6 grid gap-4 lg:grid-cols-[260px_1fr]">
           <aside className="space-y-2">
             {["Tipo", "Detalles", "Participantes", "Generar"].map((step, index) => (
@@ -40,7 +40,7 @@ export default async function NewCompetitionPage() {
                 <div className="rounded-lg border-2 border-emerald-700 bg-emerald-50 p-4 text-left">
                   <UsersRound className="mb-3 text-emerald-700" size={22} />
                   <p className="font-semibold text-emerald-950">Americano</p>
-                  <p className="mt-1 text-sm text-slate-600">Parejas rotativas, puntos individuales.</p>
+                  <p className="mt-1 text-sm text-slate-600">Parejas rotativas, games acumulados por jugador.</p>
                 </div>
                 {inactiveTypes.map((type) => (
                   <div key={type} className="rounded-lg border border-emerald-950/10 bg-white p-4 text-left opacity-60">
@@ -94,8 +94,8 @@ export default async function NewCompetitionPage() {
                       <Input max={16} min={1} name="courtCount" required defaultValue={defaultCourtCount} type="number" />
                     </label>
                     <label className="space-y-2 text-sm font-medium">
-                      Puntos por partido
-                      <Input max={99} min={1} name="targetPoints" required defaultValue={24} type="number" />
+                      Games objetivo
+                      <Input max={24} min={1} name="targetPoints" required defaultValue={6} type="number" />
                     </label>
                     <label className="space-y-2 text-sm font-medium">
                       Rondas
@@ -128,7 +128,7 @@ export default async function NewCompetitionPage() {
                   <div className="grid gap-3 sm:grid-cols-3">
                     <Info icon={<MapPin size={16} />} label="Ambito" value={clubs.length > 0 ? "Organizacion o personal" : "Personal"} />
                     <Info icon={<Eye size={16} />} label="Visibilidad" value="Publica con enlace" />
-                    <Info icon={<Calendar size={16} />} label="Tabla" value="Puntos acumulados" />
+                    <Info icon={<Calendar size={16} />} label="Tabla" value="Games acumulados" />
                   </div>
                   <Button type="submit">Crear y generar partidos</Button>
                 </form>

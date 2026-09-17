@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { productConfig } from "@/lib/config/product";
 
 const formats = [
-  ["Americano", "Parejas rotativas y puntos fijos.", UsersRound],
+  ["Americano", "Parejas rotativas y games acumulados.", UsersRound],
   ["Mexicano", "Rondas por ranking en vivo.", Radio],
   ["Ligas", "Parejas fijas, calendario y tabla.", CalendarPlus],
   ["Torneos", "Round robin y eliminacion.", Trophy],
