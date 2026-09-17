@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { hasSupabaseEnv } from "@/lib/env";
+import { playerLevelValues } from "@/lib/players/levels";
 import { createClient } from "@/lib/supabase/server";
 
 const addPlayerSchema = z.object({
   displayName: z.string().min(1, "Escribe el nombre del jugador.").max(80).trim(),
-  rating: z.coerce.number().min(0).max(7).optional(),
+  rating: z.coerce.number().refine((value) => playerLevelValues.includes(value), "Selecciona un nivel valido."),
 });
 
 const playerIdSchema = z.string().uuid();
@@ -22,7 +23,7 @@ export async function addPlayerAction(formData: FormData) {
 
   const parsed = addPlayerSchema.safeParse({
     displayName: formData.get("displayName"),
-    rating: formData.get("rating") || undefined,
+    rating: formData.get("rating"),
   });
 
   if (!parsed.success) {
@@ -46,7 +47,7 @@ export async function addPlayerAction(formData: FormData) {
   await supabase.from("players").insert({
     display_name: parsed.data.displayName,
     linked_user_id: user.id,
-    rating: parsed.data.rating ?? null,
+    rating: parsed.data.rating,
   });
 
   revalidatePath("/players");
@@ -60,7 +61,7 @@ export async function updatePlayerAction(formData: FormData) {
   const parsed = updatePlayerSchema.safeParse({
     displayName: formData.get("displayName"),
     id: formData.get("id"),
-    rating: formData.get("rating") || undefined,
+    rating: formData.get("rating"),
   });
 
   if (!parsed.success) {
@@ -80,7 +81,7 @@ export async function updatePlayerAction(formData: FormData) {
     .from("players")
     .update({
       display_name: parsed.data.displayName,
-      rating: parsed.data.rating ?? null,
+      rating: parsed.data.rating,
       updated_at: new Date().toISOString(),
     })
     .eq("id", parsed.data.id)

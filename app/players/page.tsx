@@ -3,6 +3,8 @@ import { addPlayerAction, deletePlayerAction, updatePlayerAction } from "@/app/p
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { getPlayerLevelLabel, playerLevels } from "@/lib/players/levels";
 import { getPlayersData } from "@/lib/players/queries";
 
 export default async function PlayersPage() {
@@ -33,9 +35,15 @@ export default async function PlayersPage() {
               <h2 className="font-semibold">Agregar jugador</h2>
             </CardHeader>
             <CardContent>
-              <form action={addPlayerAction} className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+              <form action={addPlayerAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
                 <Input name="displayName" placeholder="Nombre del jugador" required />
-                <Input max="7" min="0" name="rating" placeholder="Nivel 1-7" step="0.1" type="number" />
+                <Select aria-label="Nivel del jugador" defaultValue="0" name="rating" required>
+                  {playerLevels.map((level) => (
+                    <option key={level.value} value={level.value}>
+                      {level.label}
+                    </option>
+                  ))}
+                </Select>
                 <Button type="submit">Agregar</Button>
               </form>
             </CardContent>
@@ -51,18 +59,16 @@ export default async function PlayersPage() {
               data.players.map((player) => (
                 <div key={player.id} className="grid gap-3 py-4 lg:grid-cols-[1fr_auto] lg:items-center">
                   {data.user ? (
-                    <form action={updatePlayerAction} className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+                    <form action={updatePlayerAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
                       <input name="id" type="hidden" value={player.id} />
                       <Input defaultValue={player.displayName} name="displayName" required />
-                      <Input
-                        defaultValue={player.rating ?? ""}
-                        max="7"
-                        min="0"
-                        name="rating"
-                        placeholder="Nivel 1-7"
-                        step="0.1"
-                        type="number"
-                      />
+                      <Select aria-label={`Nivel de ${player.displayName}`} defaultValue={player.rating ?? 0} name="rating" required>
+                        {playerLevels.map((level) => (
+                          <option key={level.value} value={level.value}>
+                            {level.label}
+                          </option>
+                        ))}
+                      </Select>
                       <Button variant="secondary" type="submit">
                         Guardar
                       </Button>
@@ -70,9 +76,7 @@ export default async function PlayersPage() {
                   ) : (
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{player.displayName}</span>
-                      <span className="text-sm text-slate-500">
-                        {player.rating === null ? "Sin nivel" : `Nivel ${player.rating.toFixed(1)}`}
-                      </span>
+                      <span className="text-sm text-slate-500">{getPlayerLevelLabel(player.rating)}</span>
                     </div>
                   )}
                   {data.user && (
