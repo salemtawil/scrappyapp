@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 const uuidSchema = z.string().uuid();
 
 const createAmericanoSchema = z.object({
+  clubId: z.string().uuid().optional(),
   courtCount: z.coerce.number().int().min(1).max(16),
   name: z.string().min(1).max(100).trim(),
   playerIds: z.array(uuidSchema).min(4, "Selecciona al menos 4 jugadores."),
@@ -46,6 +47,7 @@ type RoundInsertRow = {
 export async function createAmericanoAction(formData: FormData) {
   const parsed = createAmericanoSchema.safeParse({
     courtCount: formData.get("courtCount"),
+    clubId: formData.get("clubId") || undefined,
     name: formData.get("name"),
     playerIds: formData.getAll("playerIds"),
     roundCount: formData.get("roundCount"),
@@ -84,6 +86,19 @@ export async function createAmericanoAction(formData: FormData) {
     return;
   }
 
+  if (parsed.data.clubId) {
+    const { data: club } = await supabase
+      .from("clubs")
+      .select("id")
+      .eq("id", parsed.data.clubId)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+
+    if (!club) {
+      return;
+    }
+  }
+
   const roomCode = createRoomCode();
   const settings = {
     courtCount: parsed.data.courtCount,
@@ -95,6 +110,7 @@ export async function createAmericanoAction(formData: FormData) {
     .from("competitions")
     .insert({
       category: "SOCIAL",
+      club_id: parsed.data.clubId ?? null,
       engine_provider: "custom",
       format: "AMERICANO",
       name: parsed.data.name,

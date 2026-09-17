@@ -5,13 +5,15 @@ import { createAmericanoAction } from "@/app/competitions/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { getOwnedClubs } from "@/lib/clubs/queries";
 import { getPlayerLevelLabel } from "@/lib/players/levels";
 import { getPlayersData } from "@/lib/players/queries";
 
 const inactiveTypes = ["Mexicano", "Liga", "Torneo"];
 
 export default async function NewCompetitionPage() {
-  const data = await getPlayersData();
+  const [data, clubs] = await Promise.all([getPlayersData(), getOwnedClubs()]);
   const defaultCourtCount = Math.max(1, Math.min(4, Math.floor(data.players.length / 4) || 1));
   const defaultRoundCount = Math.max(1, Math.min(7, data.players.length - 1 || 4));
 
@@ -68,6 +70,17 @@ export default async function NewCompetitionPage() {
                       <Input name="startsAt" type="datetime-local" />
                     </label>
                     <label className="space-y-2 text-sm font-medium">
+                      Organizacion
+                      <Select name="clubId" defaultValue="">
+                        <option value="">Personal / sin organizacion</option>
+                        {clubs.map((club) => (
+                          <option key={club.id} value={club.id}>
+                            {club.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </label>
+                    <label className="space-y-2 text-sm font-medium">
                       Pistas
                       <Input max={16} min={1} name="courtCount" required defaultValue={defaultCourtCount} type="number" />
                     </label>
@@ -104,7 +117,7 @@ export default async function NewCompetitionPage() {
                     </div>
                   </section>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <Info icon={<MapPin size={16} />} label="Ambito" value="Personal" />
+                    <Info icon={<MapPin size={16} />} label="Ambito" value={clubs.length > 0 ? "Organizacion o personal" : "Personal"} />
                     <Info icon={<Eye size={16} />} label="Visibilidad" value="Publica con enlace" />
                     <Info icon={<Calendar size={16} />} label="Tabla" value="Puntos acumulados" />
                   </div>

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { CalendarPlus, Radio, Trophy, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { joinByCodeAction } from "@/app/join/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { productConfig } from "@/lib/config/product";
 
 const formats = [
@@ -37,6 +39,10 @@ export default function Home() {
                 <Button variant="secondary">Ver sala demo</Button>
               </Link>
             </div>
+            <form action={joinByCodeAction} className="mt-5 grid gap-3 rounded-lg border border-emerald-950/10 bg-white p-3 shadow-sm sm:grid-cols-[1fr_auto]">
+              <Input name="code" placeholder="Ingresa codigo de competicion u organizacion" required />
+              <Button type="submit">Entrar</Button>
+            </form>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {formats.map(([title, description, Icon]) => (
