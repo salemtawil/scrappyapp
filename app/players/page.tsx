@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { addPlayerAction } from "@/app/players/actions";
+import { addPlayerAction, deletePlayerAction, updatePlayerAction } from "@/app/players/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ export default async function PlayersPage() {
             <CardContent>
               <form action={addPlayerAction} className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
                 <Input name="displayName" placeholder="Nombre del jugador" required />
-                <Input max="7" min="0" name="rating" placeholder="Rating" step="0.1" type="number" />
+                <Input max="7" min="0" name="rating" placeholder="Nivel 1-7" step="0.1" type="number" />
                 <Button type="submit">Agregar</Button>
               </form>
             </CardContent>
@@ -49,11 +49,40 @@ export default async function PlayersPage() {
           <CardContent className="divide-y divide-emerald-950/10">
             {data.players.length > 0 ? (
               data.players.map((player) => (
-                <div key={player.id} className="flex items-center justify-between py-3">
-                  <span className="font-medium">{player.displayName}</span>
-                  <span className="text-sm text-slate-500">
-                    {player.rating === null ? "Sin rating" : `Rating ${player.rating.toFixed(1)}`}
-                  </span>
+                <div key={player.id} className="grid gap-3 py-4 lg:grid-cols-[1fr_auto] lg:items-center">
+                  {data.user ? (
+                    <form action={updatePlayerAction} className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
+                      <input name="id" type="hidden" value={player.id} />
+                      <Input defaultValue={player.displayName} name="displayName" required />
+                      <Input
+                        defaultValue={player.rating ?? ""}
+                        max="7"
+                        min="0"
+                        name="rating"
+                        placeholder="Nivel 1-7"
+                        step="0.1"
+                        type="number"
+                      />
+                      <Button variant="secondary" type="submit">
+                        Guardar
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{player.displayName}</span>
+                      <span className="text-sm text-slate-500">
+                        {player.rating === null ? "Sin nivel" : `Nivel ${player.rating.toFixed(1)}`}
+                      </span>
+                    </div>
+                  )}
+                  {data.user && (
+                    <form action={deletePlayerAction}>
+                      <input name="id" type="hidden" value={player.id} />
+                      <Button className="w-full lg:w-auto" variant="danger" type="submit">
+                        Borrar
+                      </Button>
+                    </form>
+                  )}
                 </div>
               ))
             ) : (
