@@ -2,10 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseEnv, hasSupabaseEnv } from "@/lib/env";
 
-const protectedRoutes = ["/dashboard", "/competitions", "/players", "/clubs"];
-
 function isProtectedRoute(pathname: string) {
-  return protectedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) return true;
+  if (pathname === "/players" || pathname.startsWith("/players/")) return true;
+  if (pathname === "/clubs" || pathname.startsWith("/clubs/")) return true;
+  if (pathname === "/competitions/new") return true;
+  if (pathname.endsWith("/live") && pathname.startsWith("/competitions/")) return true;
+  if (pathname.endsWith("/settings") && pathname.startsWith("/competitions/")) return true;
+
+  return false;
 }
 
 export async function updateSession(request: NextRequest) {

@@ -35,6 +35,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           </nav>
         </div>
+        <nav className="mx-auto grid max-w-6xl grid-cols-4 gap-1 border-t border-emerald-950/10 px-2 py-2 md:hidden">
+          <Link className="rounded-md px-2 py-2 text-center text-xs font-semibold text-emerald-950" href="/dashboard">
+            Panel
+          </Link>
+          <Link className="rounded-md px-2 py-2 text-center text-xs font-semibold text-emerald-950" href="/players">
+            Jugadores
+          </Link>
+          <Link className="rounded-md px-2 py-2 text-center text-xs font-semibold text-emerald-950" href="/clubs">
+            Clubs
+          </Link>
+          <Link className="rounded-md bg-emerald-700 px-2 py-2 text-center text-xs font-semibold text-white" href="/competitions/new">
+            Crear
+          </Link>
+        </nav>
       </header>
       {children}
     </div>

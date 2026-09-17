@@ -56,16 +56,16 @@ export function ScoreMatchCard({
 
 function ScoreSide({ inputName, names, score }: { inputName: string; names: string[]; score?: number }) {
   return (
-    <div className="grid grid-cols-[1fr_84px] items-center gap-3 rounded-md border border-emerald-950/10 p-3">
+    <div className="grid grid-cols-[minmax(0,1fr)_72px] items-center gap-3 rounded-md border border-emerald-950/10 p-3 sm:grid-cols-[minmax(0,1fr)_84px]">
       <div className="space-y-1">
         {names.map((name) => (
-          <p className="font-medium leading-tight" key={name}>
+          <p className="break-words font-medium leading-tight" key={name}>
             {name}
           </p>
         ))}
       </div>
       <Input
-        className="px-2 text-center text-lg font-bold"
+        className="h-14 px-2 text-center text-xl font-bold"
         defaultValue={score ?? ""}
         inputMode="numeric"
         max={99}
