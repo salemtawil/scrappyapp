@@ -29,7 +29,15 @@ export default async function PlayersPage() {
             </CardContent>
           </Card>
         )}
-        {data.user && (
+        {data.user && !data.isAdmin && (
+          <Card className="mt-5 border-red-200 bg-red-50">
+            <CardContent>
+              <p className="font-semibold text-red-950">Sin permiso de administrador</p>
+              <p className="mt-1 text-sm text-red-800">Tu usuario puede ver salas publicas, pero no gestionar jugadores.</p>
+            </CardContent>
+          </Card>
+        )}
+        {data.user && data.isAdmin && (
           <Card className="mt-5">
             <CardHeader>
               <h2 className="font-semibold">Agregar jugador</h2>
@@ -58,7 +66,7 @@ export default async function PlayersPage() {
             {data.players.length > 0 ? (
               data.players.map((player) => (
                 <div key={player.id} className="grid gap-3 py-4 lg:grid-cols-[1fr_auto] lg:items-center">
-                  {data.user ? (
+                  {data.user && data.isAdmin ? (
                     <form action={updatePlayerAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
                       <input name="id" type="hidden" value={player.id} />
                       <Input defaultValue={player.displayName} name="displayName" required />
@@ -79,7 +87,7 @@ export default async function PlayersPage() {
                       <span className="text-sm text-slate-500">{getPlayerLevelLabel(player.rating)}</span>
                     </div>
                   )}
-                  {data.user && (
+                  {data.user && data.isAdmin && (
                     <form action={deletePlayerAction}>
                       <input name="id" type="hidden" value={player.id} />
                       <Button className="w-full lg:w-auto" variant="danger" type="submit">

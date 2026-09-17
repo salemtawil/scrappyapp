@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { getAdminSession } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
 const createClubSchema = z.object({
@@ -19,6 +20,10 @@ export async function createClubAction(formData: FormData) {
   if (!parsed.success) {
     return;
   }
+
+  const admin = await getAdminSession();
+  if (!admin.user) redirect("/auth/login?next=/clubs");
+  if (!admin.isAdmin) return;
 
   const supabase = await createClient();
   const {

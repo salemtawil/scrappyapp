@@ -51,6 +51,14 @@ export default async function NewCompetitionPage() {
                 ))}
               </div>
               {data.players.length < 4 ? (
+                data.user && !data.isAdmin ? (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-6 text-center">
+                    <p className="font-semibold text-red-950">Sin permiso de administrador</p>
+                    <p className="mt-1 text-sm text-red-800">
+                      Tu correo no esta autorizado para crear competiciones.
+                    </p>
+                  </div>
+                ) : (
                 <div className="rounded-md border border-dashed border-emerald-950/20 p-6 text-center">
                   <p className="font-semibold text-emerald-950">Necesitas al menos 4 jugadores.</p>
                   <p className="mt-1 text-sm text-slate-600">Agrega jugadores antes de crear un Americano.</p>
@@ -58,6 +66,7 @@ export default async function NewCompetitionPage() {
                     <Button type="button">Ir a jugadores</Button>
                   </Link>
                 </div>
+                )
               ) : (
                 <form action={createAmericanoAction} className="space-y-6">
                   <div className="grid gap-4 sm:grid-cols-2">

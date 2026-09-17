@@ -8,6 +8,7 @@ import { getDashboardData } from "@/lib/competitions/queries";
 
 export default async function DashboardPage() {
   const dashboard = await getDashboardData();
+  const canManage = !dashboard.configured || dashboard.isAdmin;
 
   return (
     <AppShell>
@@ -17,19 +18,21 @@ export default async function DashboardPage() {
             <h1 className="text-3xl font-bold text-emerald-950">Panel admin</h1>
             <p className="mt-1 text-slate-600">Todo lo creado: organizaciones, competiciones, codigos y marcadores.</p>
           </div>
-          <div className="grid gap-2 sm:flex">
-            <Link href="/clubs">
-              <Button className="w-full" variant="secondary" type="button">
-                Organizaciones
-              </Button>
-            </Link>
-            <Link href={dashboard.user ? "/competitions/new" : "/auth/login?next=/competitions/new"}>
-              <Button className="w-full" type="button">
-                <PlusCircle size={18} />
-                Crear competicion
-              </Button>
-            </Link>
-          </div>
+          {canManage && (
+            <div className="grid gap-2 sm:flex">
+              <Link href="/clubs">
+                <Button className="w-full" variant="secondary" type="button">
+                  Organizaciones
+                </Button>
+              </Link>
+              <Link href={dashboard.user ? "/competitions/new" : "/auth/login?next=/competitions/new"}>
+                <Button className="w-full" type="button">
+                  <PlusCircle size={18} />
+                  Crear competicion
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
         {!dashboard.configured && (
           <Card className="mt-6 border-amber-300 bg-amber-50">
@@ -41,6 +44,18 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         )}
+        {dashboard.configured && dashboard.user && !dashboard.isAdmin && (
+          <Card className="mt-6 border-red-200 bg-red-50">
+            <CardContent>
+              <p className="font-semibold text-red-950">Sin permiso de administrador</p>
+              <p className="mt-1 text-sm text-red-800">
+                Tu correo no esta en `ADMIN_EMAILS`. Puedes ver salas publicas por codigo, pero no administrar eventos.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        {canManage && (
+          <>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Metric icon={<Radio size={18} />} label="Organizaciones" value={dashboard.organizationCount} />
           <Metric icon={<ListChecks size={18} />} label="Competiciones" value={dashboard.competitions.length} />
@@ -140,6 +155,8 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
       </main>
     </AppShell>
   );

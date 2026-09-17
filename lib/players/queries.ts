@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/session";
+import { getAdminSession } from "@/lib/auth/admin";
 import { demoEntries } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,6 +18,7 @@ type PlayerRow = {
 
 export type PlayersData = {
   configured: boolean;
+  isAdmin: boolean;
   players: PlayerListItem[];
   user: { email?: string; id: string } | null;
 };
@@ -32,11 +33,12 @@ function toPlayer(row: PlayerRow): PlayerListItem {
 }
 
 export async function getPlayersData(): Promise<PlayersData> {
-  const { configured, user } = await getCurrentUser();
+  const { configured, isAdmin, user } = await getAdminSession();
 
   if (!configured) {
     return {
       configured: false,
+      isAdmin: true,
       players: demoEntries.map((entry) => ({
         active: true,
         displayName: entry.displayName,
@@ -47,8 +49,8 @@ export async function getPlayersData(): Promise<PlayersData> {
     };
   }
 
-  if (!user) {
-    return { configured: true, players: [], user: null };
+  if (!user || !isAdmin) {
+    return { configured: true, isAdmin, players: [], user: user ? { email: user.email ?? undefined, id: user.id } : null };
   }
 
   const supabase = await createClient();
@@ -64,6 +66,7 @@ export async function getPlayersData(): Promise<PlayersData> {
 
   return {
     configured: true,
+    isAdmin,
     players: ((data ?? []) as PlayerRow[]).map(toPlayer),
     user: { email: user.email ?? undefined, id: user.id },
   };

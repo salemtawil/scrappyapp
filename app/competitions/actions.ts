@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { getAdminSession } from "@/lib/auth/admin";
 import { generateAmericanoRounds } from "@/lib/competitions/social/americano";
 import type { SocialEntry } from "@/lib/competitions/social/social-types";
 import { createClient } from "@/lib/supabase/server";
@@ -58,6 +59,10 @@ export async function createAmericanoAction(formData: FormData) {
   if (!parsed.success) {
     return;
   }
+
+  const admin = await getAdminSession();
+  if (!admin.user) redirect("/auth/login?next=/competitions/new");
+  if (!admin.isAdmin) return;
 
   const supabase = await createClient();
   const {
@@ -224,6 +229,10 @@ export async function saveMatchScoreAction(formData: FormData) {
   if (!parsed.success) {
     return;
   }
+
+  const admin = await getAdminSession();
+  if (!admin.user) redirect(`/auth/login?next=/competitions/${parsed.data.competitionId}/live`);
+  if (!admin.isAdmin) return;
 
   const supabase = await createClient();
   const {

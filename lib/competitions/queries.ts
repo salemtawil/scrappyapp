@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/session";
+import { getAdminSession } from "@/lib/auth/admin";
 import { demoCompetition } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -48,6 +48,7 @@ export type DashboardData = {
   activePlayers: number;
   competitions: AdminCompetition[];
   configured: boolean;
+  isAdmin: boolean;
   liveCount: number;
   matchCount: number;
   organizationCount: number;
@@ -79,13 +80,14 @@ function toSummary(row: CompetitionRow): AdminCompetition {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const { configured, user } = await getCurrentUser();
+  const { configured, isAdmin, user } = await getAdminSession();
 
   if (!configured) {
     return {
       activePlayers: 48,
       competitions: [{ ...demoCompetition, club: null, completedMatches: 1, pendingMatches: 2, playerCount: 8 }],
       configured: false,
+      isAdmin: true,
       liveCount: demoCompetition.status === "live" ? 1 : 0,
       matchCount: 3,
       organizationCount: 0,
@@ -94,16 +96,17 @@ export async function getDashboardData(): Promise<DashboardData> {
     };
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return {
       activePlayers: 0,
       competitions: [],
       configured: true,
+      isAdmin,
       liveCount: 0,
       matchCount: 0,
       organizationCount: 0,
       organizations: [],
-      user: null,
+      user: user ? { email: user.email ?? undefined, id: user.id } : null,
     };
   }
 
@@ -199,6 +202,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     activePlayers: activePlayers ?? 0,
     competitions,
     configured: true,
+    isAdmin,
     liveCount: competitions.filter((competition) => competition.status === "live").length,
     matchCount: [...matchCounts.values()].reduce((total, counts) => total + counts.completed + counts.pending, 0),
     organizationCount: organizations.length,

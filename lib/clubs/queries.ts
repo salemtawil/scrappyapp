@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth/session";
+import { getAdminSession } from "@/lib/auth/admin";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import type { CompetitionSummary } from "@/lib/competitions/types";
@@ -35,9 +35,9 @@ export type ClubPageData = {
 };
 
 export async function getOwnedClubs(): Promise<ClubListItem[]> {
-  const { configured, user } = await getCurrentUser();
+  const { configured, isAdmin, user } = await getAdminSession();
 
-  if (!configured || !user) {
+  if (!configured || !user || !isAdmin) {
     return [];
   }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getAdminSession } from "@/lib/auth/admin";
 import { hasSupabaseEnv } from "@/lib/env";
 import { playerLevelValues } from "@/lib/players/levels";
 import { createClient } from "@/lib/supabase/server";
@@ -20,6 +21,9 @@ export async function addPlayerAction(formData: FormData) {
   if (!hasSupabaseEnv()) {
     return;
   }
+
+  const admin = await getAdminSession();
+  if (!admin.user || !admin.isAdmin) return;
 
   const parsed = addPlayerSchema.safeParse({
     displayName: formData.get("displayName"),
@@ -58,6 +62,9 @@ export async function updatePlayerAction(formData: FormData) {
     return;
   }
 
+  const admin = await getAdminSession();
+  if (!admin.user || !admin.isAdmin) return;
+
   const parsed = updatePlayerSchema.safeParse({
     displayName: formData.get("displayName"),
     id: formData.get("id"),
@@ -94,6 +101,9 @@ export async function deletePlayerAction(formData: FormData) {
   if (!hasSupabaseEnv()) {
     return;
   }
+
+  const admin = await getAdminSession();
+  if (!admin.user || !admin.isAdmin) return;
 
   const parsed = playerIdSchema.safeParse(formData.get("id"));
 
