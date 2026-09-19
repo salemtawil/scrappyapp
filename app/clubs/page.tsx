@@ -1,61 +1,65 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { createClubAction } from "@/app/clubs/actions";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { CreateClubForm } from "@/components/clubs/create-club-form";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getAdminSession } from "@/lib/auth/admin";
 import { getOwnedClubs } from "@/lib/clubs/queries";
+
+export const metadata: Metadata = { title: "Organizaciones" };
 
 export default async function ClubsPage() {
   const [admin, clubs] = await Promise.all([getAdminSession(), getOwnedClubs()]);
 
   return (
     <AppShell>
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-emerald-950">Organizaciones</h1>
-        <p className="mt-1 text-slate-600">Crea una sala publica para agrupar competiciones.</p>
+      <main className="mx-auto max-w-4xl px-4 py-6">
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Organizaciones</h1>
+        <p className="mt-1 text-muted-foreground">
+          Una sala pública para agrupar las competiciones de un club.
+        </p>
+
         {admin.user && !admin.isAdmin ? (
-          <Card className="mt-5 border-red-200 bg-red-50">
-            <CardContent>
-              <p className="font-semibold text-red-950">Sin permiso de administrador</p>
-              <p className="mt-1 text-sm text-red-800">Tu usuario no puede crear organizaciones.</p>
-            </CardContent>
-          </Card>
+          <Alert className="mt-5" title="Sin permiso de administrador" tone="error">
+            Tu correo no está autorizado para crear organizaciones.
+          </Alert>
         ) : (
           <Card className="mt-5">
             <CardHeader>
-              <h2 className="font-semibold">Crear organizacion</h2>
+              <CardTitle>Crear organización</CardTitle>
             </CardHeader>
             <CardContent>
-              <form action={createClubAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-                <Input name="name" placeholder="Compinche" required />
-                <Input name="city" placeholder="Ciudad" />
-                <Button type="submit">Crear</Button>
-              </form>
+              <CreateClubForm />
             </CardContent>
           </Card>
         )}
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {clubs.length > 0 ? (
             clubs.map((club) => (
-              <Link href={`/clubs/${club.slug}`} key={club.id}>
-                <Card>
+              <Link className="block" href={`/clubs/${club.slug}`} key={club.id}>
+                <Card className="h-full transition-colors hover:bg-surface-muted">
                   <CardContent>
-                    <h2 className="font-semibold">{club.name}</h2>
-                    <p className="mt-2 text-sm text-slate-600">{club.city ?? "Sala publica de competiciones"}</p>
-                    <p className="mt-2 text-xs font-semibold uppercase text-emerald-700">Codigo: {club.slug}</p>
+                    <h2 className="font-semibold text-foreground">{club.name}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {club.city ?? "Sala pública de competiciones"}
+                    </p>
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-strong">
+                      Código: {club.slug}
+                    </p>
                   </CardContent>
                 </Card>
               </Link>
             ))
           ) : (
-            <Card>
-              <CardContent>
-                <p className="font-semibold text-emerald-950">Todavia no tienes organizaciones.</p>
-                <p className="mt-2 text-sm text-slate-600">Crea una para agrupar tus Americanos y torneos.</p>
-              </CardContent>
-            </Card>
+            <div className="sm:col-span-2">
+              <EmptyState
+                description="Crea una para agrupar tus Americanos y Mexicanos bajo un mismo código público."
+                title="Todavía no tienes organizaciones"
+              />
+            </div>
           )}
         </div>
       </main>

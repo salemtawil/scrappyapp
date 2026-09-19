@@ -1,3 +1,4 @@
+import { pickFairSitOuts } from "./rest-rotation";
 import { seededShuffle, seededTieBreak } from "./seeded-rng";
 import { calculateSocialStandings } from "./standings";
 import type {
@@ -28,11 +29,32 @@ export function generateNextMexicanoRound(input: MexicanoInput) {
   return buildMexicanoRound(ranked, input, priorRounds, priorRounds.length + 1);
 }
 
+/**
+ * Un Mexicano empareja cada ronda a partir de la clasificación, así que tocar un resultado
+ * histórico invalida todo lo que se generó después. Devolvemos las rondas que siguen siendo
+ * válidas: el emparejamiento de la ronda editada ya estaba decidido antes de jugarla, de modo
+ * que se conserva, y las posteriores se descartan para regenerarlas.
+ */
+export function roundsSurvivingHistoricalEdit(
+  rounds: SocialRound[],
+  editedRoundNumber: number,
+): SocialRound[] {
+  return rounds.filter((round) => round.roundNumber <= editedRoundNumber);
+}
+
+/** Rondas que se perderían al editar un resultado de `editedRoundNumber`. */
+export function roundsInvalidatedByHistoricalEdit(
+  rounds: SocialRound[],
+  editedRoundNumber: number,
+): SocialRound[] {
+  return rounds.filter((round) => round.roundNumber > editedRoundNumber);
+}
+
 export function regenerateMexicanoAfterHistoricalEdit(
   input: MexicanoInput,
   editedRoundNumber: number,
 ): SocialRound[] {
-  return (input.priorRounds ?? []).filter((round) => round.roundNumber <= editedRoundNumber);
+  return roundsSurvivingHistoricalEdit(input.priorRounds ?? [], editedRoundNumber);
 }
 
 function orderInitialEntries(entries: SocialEntry[], seeding: MexicanoSeeding, seed: string) {
@@ -57,10 +79,21 @@ function buildMexicanoRound(
 ): SocialRound {
   const maxMatches = Math.min(input.courtCount, Math.floor(rankedEntries.length / 4));
   const activeCount = maxMatches * 4;
-  const active = selectActiveRankedPlayers(rankedEntries, priorRounds, activeCount, input.seed, roundNumber);
-  const sitOutSet = new Set(active.map((entry) => entry.id));
-  const sitOutEntryIds = input.entries.filter((entry) => !sitOutSet.has(entry.id)).map((entry) => entry.id);
+  // El descanso se decide por equidad, no por posición: si saliera del último
+  // tramo de la tabla, los dos peores no volverían a jugar en toda la noche.
+  const sitOutEntryIds = pickFairSitOuts({
+    entries: rankedEntries,
+    priorRounds,
+    roundNumber,
+    seed: input.seed,
+    sitOutCount: rankedEntries.length - activeCount,
+  });
+  const sitOutSet = new Set(sitOutEntryIds);
+  // Quienes juegan mantienen el orden de la clasificación, así cada pista
+  // reúne a cuatro jugadores de nivel parecido.
+  const active = rankedEntries.filter((entry) => !sitOutSet.has(entry.id));
   const matches: SocialMatch[] = [];
+
   for (let index = 0; index < active.length; index += 4) {
     const group = active.slice(index, index + 4);
     if (group.length < 4) continue;
@@ -68,13 +101,17 @@ function buildMexicanoRound(
     matches.push({
       id: `mexicano-r${roundNumber}-m${courtNumber}`,
       roundNumber,
+      courtNumber,
       courtLabel: `Pista ${courtNumber}`,
       sideA: { entryIds: [group[0].id, group[3].id] },
       sideB: { entryIds: [group[1].id, group[2].id] },
-      targetPoints: input.targetPoints,
+      targetPoints: input.scoring.targetPoints,
+      scoringMode: input.scoring.mode,
+      status: "pending",
       stateVersion: 0,
     });
   }
+
   return {
     id: `mexicano-r${roundNumber}`,
     roundNumber,
@@ -83,54 +120,7 @@ function buildMexicanoRound(
   };
 }
 
-function selectActiveRankedPlayers(
-  rankedEntries: SocialEntry[],
-  priorRounds: SocialRound[],
-  activeCount: number,
-  seed: string,
-  roundNumber: number,
-) {
-  if (activeCount >= rankedEntries.length) return rankedEntries;
-  const sitOutCounts = new Map(rankedEntries.map((entry) => [entry.id, 0]));
-  const lastSitOuts = new Set(priorRounds.at(-1)?.sitOutEntryIds ?? []);
-  for (const round of priorRounds) {
-    for (const entryId of round.sitOutEntryIds) {
-      sitOutCounts.set(entryId, (sitOutCounts.get(entryId) ?? 0) + 1);
-    }
-  }
-
-  // Mexicano keeps ranking groups coherent first, but the rest candidate in each
-  // four-player band is chosen by rest debt and consecutive-rest avoidance.
-  const selected: SocialEntry[] = [];
-  for (let index = 0; index < rankedEntries.length; index += 4) {
-    const group = rankedEntries.slice(index, index + 4);
-    if (selected.length + group.length <= activeCount) {
-      selected.push(...group);
-      continue;
-    }
-    const needed = activeCount - selected.length;
-    selected.push(
-      ...group
-        .sort((a, b) => {
-          const restDebt = (sitOutCounts.get(b.id) ?? 0) - (sitOutCounts.get(a.id) ?? 0);
-          const consecutive = Number(lastSitOuts.has(a.id)) - Number(lastSitOuts.has(b.id));
-          return (
-            restDebt ||
-            consecutive ||
-            seededTieBreak(seed, `${roundNumber}:active:${a.id}`) -
-              seededTieBreak(seed, `${roundNumber}:active:${b.id}`)
-          );
-        })
-        .slice(0, needed),
-    );
-    break;
-  }
-  return selected.sort(
-    (a, b) => rankedEntries.findIndex((entry) => entry.id === a.id) - rankedEntries.findIndex((entry) => entry.id === b.id),
-  );
-}
-
 export function canGenerateMexicanoNextRound(round: SocialRound, results: SocialResult[]) {
   const completed = new Set(results.map((result) => result.matchId));
-  return round.matches.every((match) => completed.has(match.id));
+  return round.matches.length > 0 && round.matches.every((match) => completed.has(match.id));
 }

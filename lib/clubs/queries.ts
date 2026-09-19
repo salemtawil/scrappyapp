@@ -17,18 +17,6 @@ type ClubRow = {
   slug: string;
 };
 
-type CompetitionRow = {
-  category: CompetitionSummary["category"];
-  format: CompetitionSummary["format"];
-  id: string;
-  name: string;
-  public_room_code: string;
-  starts_at: string | null;
-  status: CompetitionSummary["status"];
-  timezone: string;
-  visibility: CompetitionSummary["visibility"];
-};
-
 export type ClubPageData = {
   club: ClubListItem;
   competitions: CompetitionSummary[];
@@ -59,41 +47,39 @@ export async function getClubBySlug(slug: string): Promise<ClubPageData | null> 
   if (!hasSupabaseEnv()) return null;
 
   const supabase = await createClient();
-  const { data: club, error: clubError } = await supabase
-    .from("clubs")
-    .select("id,name,slug,city")
-    .eq("slug", slug)
-    .maybeSingle();
+  // Función saneada: la página de organización es pública y no debe leer las tablas
+  // directamente (expondría owner_user_id y el resto de columnas administrativas).
+  const { data, error } = await supabase.rpc("public_club_snapshot", { p_slug: slug });
 
-  if (clubError) {
-    throw new Error(`Unable to load organization: ${clubError.message}`);
+  if (error) {
+    throw new Error(`No pudimos cargar la organización: ${error.message}`);
   }
+  if (!data) return null;
 
-  if (!club) return null;
-
-  const { data: competitions, error: competitionError } = await supabase
-    .from("competitions")
-    .select("id,name,category,format,status,visibility,public_room_code,starts_at,timezone")
-    .eq("club_id", club.id)
-    .eq("visibility", "public")
-    .order("starts_at", { ascending: false, nullsFirst: false });
-
-  if (competitionError) {
-    throw new Error(`Unable to load organization competitions: ${competitionError.message}`);
-  }
+  const snapshot = data as {
+    club: { city: string | null; name: string; slug: string };
+    competitions: Array<{
+      category: CompetitionSummary["category"];
+      format: CompetitionSummary["format"];
+      name: string;
+      roomCode: string;
+      startsAt: string | null;
+      status: CompetitionSummary["status"];
+    }>;
+  };
 
   return {
-    club: toClub(club as ClubRow),
-    competitions: ((competitions ?? []) as CompetitionRow[]).map((competition) => ({
+    club: { city: snapshot.club.city, id: snapshot.club.slug, name: snapshot.club.name, slug: snapshot.club.slug },
+    competitions: snapshot.competitions.map((competition) => ({
       category: competition.category,
       format: competition.format,
-      id: competition.id,
+      id: competition.roomCode,
       name: competition.name,
-      roomCode: competition.public_room_code,
-      startsAt: competition.starts_at ?? new Date().toISOString(),
+      roomCode: competition.roomCode,
+      startsAt: competition.startsAt ?? new Date().toISOString(),
       status: competition.status,
-      timezone: competition.timezone,
-      visibility: competition.visibility,
+      timezone: "America/Caracas",
+      visibility: "public" as const,
     })),
   };
 }

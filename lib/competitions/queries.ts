@@ -1,5 +1,5 @@
 import { getAdminSession } from "@/lib/auth/admin";
-import { demoCompetition } from "@/lib/demo-data";
+import { demoDashboardCompetition, DEMO_ROOM_CODE } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import type {
   CompetitionCategory,
@@ -83,13 +83,32 @@ export async function getDashboardData(): Promise<DashboardData> {
   const { configured, isAdmin, user } = await getAdminSession();
 
   if (!configured) {
+    // Sin Supabase no hay datos reales: se muestra una única competición de ejemplo,
+    // etiquetada como tal, y los contadores salen de ella en vez de inventarse.
+    const demo = demoDashboardCompetition;
     return {
-      activePlayers: 48,
-      competitions: [{ ...demoCompetition, club: null, completedMatches: 1, pendingMatches: 2, playerCount: 8 }],
+      activePlayers: demo.playerCount,
+      competitions: [
+        {
+          category: "SOCIAL",
+          club: null,
+          completedMatches: demo.completedMatches,
+          format: demo.format,
+          id: DEMO_ROOM_CODE,
+          name: demo.name,
+          pendingMatches: demo.pendingMatches,
+          playerCount: demo.playerCount,
+          roomCode: demo.roomCode,
+          startsAt: new Date().toISOString(),
+          status: demo.status,
+          timezone: "America/Caracas",
+          visibility: "public",
+        },
+      ],
       configured: false,
       isAdmin: true,
-      liveCount: demoCompetition.status === "live" ? 1 : 0,
-      matchCount: 3,
+      liveCount: 1,
+      matchCount: demo.completedMatches + demo.pendingMatches,
       organizationCount: 0,
       organizations: [],
       user: null,

@@ -5,37 +5,35 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAdminSession } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
+import { errorState, fieldErrorsFrom, type FormState } from "@/lib/validation/form-state";
 
 const createClubSchema = z.object({
-  city: z.string().max(100).optional(),
-  name: z.string().min(1).max(100).trim(),
+  city: z.string().trim().max(100, "Máximo 100 caracteres.").optional(),
+  name: z.string().trim().min(1, "Ponle nombre a la organización.").max(100, "Máximo 100 caracteres."),
 });
 
-export async function createClubAction(formData: FormData) {
+export async function createClubAction(_previous: FormState, formData: FormData): Promise<FormState> {
   const parsed = createClubSchema.safeParse({
     city: formData.get("city") || undefined,
     name: formData.get("name"),
   });
 
   if (!parsed.success) {
-    return;
+    return errorState("Revisa los campos marcados.", fieldErrorsFrom(parsed.error));
   }
 
   const admin = await getAdminSession();
-  if (!admin.user) redirect("/auth/login?next=/clubs");
-  if (!admin.isAdmin) return;
+  if (!admin.user) return errorState("Tu sesión caducó. Vuelve a entrar.");
+  if (!admin.isAdmin) return errorState("Tu correo no está autorizado para crear organizaciones.");
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login?next=/clubs");
-  }
+  if (!user) return errorState("Tu sesión caducó. Vuelve a entrar.");
 
   await supabase.from("profiles").upsert({
-    display_name: user.user_metadata.display_name ?? user.email?.split("@")[0] ?? "Organizador",
+    display_name: user.user_metadata?.display_name ?? user.email?.split("@")[0] ?? "Organizador",
     id: user.id,
   });
 
@@ -52,15 +50,17 @@ export async function createClubAction(formData: FormData) {
     .select("id,slug")
     .single();
 
-  if (error) {
-    throw new Error(`No pudimos crear la organizacion: ${error.message}`);
-  }
+  if (error) return errorState(`No pudimos crear la organización: ${error.message}`);
 
-  await supabase.from("club_members").insert({
+  const { error: memberError } = await supabase.from("club_members").insert({
     club_id: club.id,
     role: "owner",
     user_id: user.id,
   });
+
+  if (memberError) {
+    return errorState(`La organización se creó pero no pudimos asignarte como propietario: ${memberError.message}`);
+  }
 
   revalidatePath("/clubs");
   redirect(`/clubs/${club.slug}`);
@@ -70,7 +70,7 @@ function createSlug(name: string) {
   const base =
     name
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[̀-ͯ]/g, "")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "")

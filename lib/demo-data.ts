@@ -1,6 +1,14 @@
 import { generateAmericanoRounds } from "./competitions/social/americano";
-import { calculateSocialStandings } from "./competitions/social/standings";
-import type { CompetitionSummary } from "./competitions/types";
+import type { SocialScoring } from "./competitions/social/social-types";
+
+/**
+ * Datos de demostración. Solo se usan cuando Supabase NO está configurado,
+ * para que la portada, el panel y la sala de ejemplo se puedan recorrer en local.
+ * Con Supabase configurado no se sirven nunca.
+ */
+export const DEMO_ROOM_CODE = "PADEL8";
+
+const demoScoring: SocialScoring = { mode: "FIXED_TOTAL", targetPoints: 24 };
 
 export const demoEntries = [
   "Ana Ruiz",
@@ -15,33 +23,74 @@ export const demoEntries = [
   id: `p${index + 1}`,
   displayName,
   seed: index + 1,
-  initialRating: 3 + index / 10,
+  initialRating: index % 3,
 }));
 
-export const demoCompetition: CompetitionSummary = {
-  id: "demo-americano",
-  name: "Americano Viernes Noche",
-  category: "SOCIAL",
-  format: "AMERICANO",
-  status: "live",
-  visibility: "public",
-  roomCode: "PADEL8",
-  startsAt: new Date().toISOString(),
-  timezone: "Europe/Madrid",
-};
-
-export const demoRounds = generateAmericanoRounds({
+const demoRounds = generateAmericanoRounds({
   entries: demoEntries,
   courtCount: 2,
   roundCount: 3,
-  targetPoints: 24,
+  scoring: demoScoring,
   seed: "demo",
 });
 
-export const demoResults = demoRounds[0].matches.map((match, index) => ({
-  matchId: match.id,
-  sideAScore: index === 0 ? 14 : 11,
-  sideBScore: index === 0 ? 10 : 13,
-}));
+const demoScores = new Map<string, [number, number]>([
+  [demoRounds[0].matches[0].id, [14, 10]],
+  [demoRounds[0].matches[1].id, [11, 13]],
+  [demoRounds[1].matches[0].id, [12, 12]],
+]);
 
-export const demoStandings = calculateSocialStandings(demoEntries, demoRounds, demoResults);
+/** Mismo contrato que devuelve `public_competition_snapshot` en Postgres. */
+export function demoPublicSnapshot() {
+  const refOf = (entryId: string) =>
+    `e${demoEntries.find((entry) => entry.id === entryId)?.seed ?? 0}`;
+
+  return {
+    competition: {
+      category: "SOCIAL" as const,
+      format: "AMERICANO" as const,
+      name: "Americano Viernes Noche (demo)",
+      organization: null,
+      plannedRounds: demoRounds.length,
+      roomCode: DEMO_ROOM_CODE,
+      scoringMode: demoScoring.mode,
+      startsAt: new Date().toISOString(),
+      stateVersion: 1,
+      status: "live" as const,
+      targetPoints: demoScoring.targetPoints,
+      timezone: "America/Caracas",
+    },
+    participants: demoEntries.map((entry) => ({
+      name: entry.displayName,
+      ref: `e${entry.seed}`,
+      seed: entry.seed,
+    })),
+    rounds: demoRounds.map((round) => ({
+      matches: round.matches.map((match) => {
+        const score = demoScores.get(match.id);
+        return {
+          courtLabel: match.courtLabel,
+          courtNumber: match.courtNumber,
+          ref: match.id,
+          sideARefs: match.sideA.entryIds.map(refOf),
+          sideAScore: score?.[0] ?? null,
+          sideBRefs: match.sideB.entryIds.map(refOf),
+          sideBScore: score?.[1] ?? null,
+          status: (score ? "completed" : "pending") as "completed" | "pending",
+        };
+      }),
+      roundNumber: round.roundNumber,
+      sitOutRefs: round.sitOutEntryIds.map(refOf),
+    })),
+  };
+}
+
+export const demoDashboardCompetition = {
+  completedMatches: demoScores.size,
+  format: "AMERICANO" as const,
+  name: "Americano Viernes Noche (demo)",
+  pendingMatches: demoRounds.flatMap((round) => round.matches).length - demoScores.size,
+  playerCount: demoEntries.length,
+  roomCode: DEMO_ROOM_CODE,
+  status: "live" as const,
+};

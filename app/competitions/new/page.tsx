@@ -1,154 +1,73 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Calendar, Eye, MapPin, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { createAmericanoAction } from "@/app/competitions/actions";
+import { CreateCompetitionWizard } from "@/components/competitions/create-wizard";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getOwnedClubs } from "@/lib/clubs/queries";
-import { getPlayerLevelLabel } from "@/lib/players/levels";
 import { getPlayersData } from "@/lib/players/queries";
 
-const inactiveTypes = ["Mexicano", "Liga", "Torneo"];
+export const metadata: Metadata = { title: "Crear competición" };
 
 export default async function NewCompetitionPage() {
   const [data, clubs] = await Promise.all([getPlayersData(), getOwnedClubs()]);
-  const defaultCourtCount = Math.max(1, Math.min(4, Math.floor(data.players.length / 4) || 1));
-  const defaultRoundCount = Math.max(1, Math.min(7, data.players.length - 1 || 4));
+
 
   return (
     <AppShell>
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-emerald-950">Crear competicion</h1>
-        <p className="mt-1 text-slate-600">Arma un Americano social con rotacion de parejas y games individuales.</p>
-        <div className="mt-6 grid gap-4 lg:grid-cols-[260px_1fr]">
-          <aside className="space-y-2">
-            {["Tipo", "Detalles", "Participantes", "Generar"].map((step, index) => (
-              <div key={step} className="rounded-md border border-emerald-950/10 bg-white px-3 py-2 text-sm">
-                <span className="mr-2 font-semibold text-emerald-700">{index + 1}</span>
-                {step}
-              </div>
-            ))}
-          </aside>
-          <Card>
-            <CardHeader>
-              <h2 className="font-semibold">Americano</h2>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border-2 border-emerald-700 bg-emerald-50 p-4 text-left">
-                  <UsersRound className="mb-3 text-emerald-700" size={22} />
-                  <p className="font-semibold text-emerald-950">Americano</p>
-                  <p className="mt-1 text-sm text-slate-600">Parejas rotativas, games acumulados por jugador.</p>
-                </div>
-                {inactiveTypes.map((type) => (
-                  <div key={type} className="rounded-lg border border-emerald-950/10 bg-white p-4 text-left opacity-60">
-                    <UsersRound className="mb-3 text-slate-400" size={22} />
-                    <p className="font-semibold">{type}</p>
-                    <p className="mt-1 text-sm text-slate-500">Disponible despues.</p>
-                  </div>
-                ))}
-              </div>
-              {data.players.length < 4 ? (
-                data.user && !data.isAdmin ? (
-                  <div className="rounded-md border border-red-200 bg-red-50 p-6 text-center">
-                    <p className="font-semibold text-red-950">Sin permiso de administrador</p>
-                    <p className="mt-1 text-sm text-red-800">
-                      Tu correo no esta autorizado para crear competiciones.
-                    </p>
-                  </div>
-                ) : (
-                <div className="rounded-md border border-dashed border-emerald-950/20 p-6 text-center">
-                  <p className="font-semibold text-emerald-950">Necesitas al menos 4 jugadores.</p>
-                  <p className="mt-1 text-sm text-slate-600">Agrega jugadores antes de crear un Americano.</p>
-                  <Link className="mt-4 inline-flex" href="/players">
-                    <Button type="button">Ir a jugadores</Button>
+      <main className="mx-auto max-w-3xl px-4 py-6">
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Crear competición</h1>
+        <p className="mt-1 text-muted-foreground">
+          Seis pasos: tipo, detalles, puntuación, participantes, pistas y revisión.
+        </p>
+
+        <Card className="mt-5">
+          <CardContent>
+            {!data.configured ? (
+              <Alert title="Modo demostración" tone="warning">
+                Sin Supabase configurado no se pueden guardar competiciones. Configura las variables de
+                entorno y aplica las migraciones para empezar a crear eventos reales.
+              </Alert>
+            ) : !data.user ? (
+              <EmptyState
+                action={
+                  <Link href="/auth/login?next=/competitions/new">
+                    <Button>Entrar</Button>
                   </Link>
-                </div>
-                )
-              ) : (
-                <form action={createAmericanoAction} className="space-y-6">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="space-y-2 text-sm font-medium">
-                      Nombre
-                      <Input name="name" placeholder="Americano Viernes Noche" required />
-                    </label>
-                    <label className="space-y-2 text-sm font-medium">
-                      Fecha y hora
-                      <Input name="startsAt" type="datetime-local" />
-                    </label>
-                    <label className="space-y-2 text-sm font-medium">
-                      Organizacion
-                      <Select name="clubId" defaultValue="">
-                        <option value="">Personal / sin organizacion</option>
-                        {clubs.map((club) => (
-                          <option key={club.id} value={club.id}>
-                            {club.name}
-                          </option>
-                        ))}
-                      </Select>
-                    </label>
-                    <label className="space-y-2 text-sm font-medium">
-                      Pistas
-                      <Input max={16} min={1} name="courtCount" required defaultValue={defaultCourtCount} type="number" />
-                    </label>
-                    <label className="space-y-2 text-sm font-medium">
-                      Games objetivo
-                      <Input max={24} min={1} name="targetPoints" required defaultValue={6} type="number" />
-                    </label>
-                    <label className="space-y-2 text-sm font-medium">
-                      Rondas
-                      <Input max={20} min={1} name="roundCount" required defaultValue={defaultRoundCount} type="number" />
-                    </label>
-                  </div>
-                  <section>
-                    <h3 className="font-semibold text-emerald-950">Jugadores</h3>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {data.players.map((player) => (
-                        <label
-                          className="flex items-center gap-3 rounded-md border border-emerald-950/10 bg-white p-3 text-sm"
-                          key={player.id}
-                        >
-                          <input
-                            className="size-4 accent-emerald-700"
-                            defaultChecked
-                            name="playerIds"
-                            type="checkbox"
-                            value={player.id}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium text-emerald-950">{player.displayName}</span>
-                            <span className="text-slate-500">{getPlayerLevelLabel(player.rating)}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </section>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <Info icon={<MapPin size={16} />} label="Ambito" value={clubs.length > 0 ? "Organizacion o personal" : "Personal"} />
-                    <Info icon={<Eye size={16} />} label="Visibilidad" value="Publica con enlace" />
-                    <Info icon={<Calendar size={16} />} label="Tabla" value="Games acumulados" />
-                  </div>
-                  <Button type="submit">Crear y generar partidos</Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                }
+                description="Necesitas una sesión iniciada para crear y administrar competiciones."
+                title="Inicia sesión"
+              />
+            ) : !data.isAdmin ? (
+              <Alert title="Sin permiso de administrador" tone="error">
+                Tu correo no está en <code>ADMIN_EMAILS</code>. Puedes ver salas públicas por código, pero
+                no crear competiciones.
+              </Alert>
+            ) : data.players.length < 4 ? (
+              <EmptyState
+                action={
+                  <Link href="/players">
+                    <Button>Ir a jugadores</Button>
+                  </Link>
+                }
+                description={`Tienes ${data.players.length} jugador${data.players.length === 1 ? "" : "es"} en tu lista y hacen falta 4 para armar un partido de dobles.`}
+                title="Necesitas al menos 4 jugadores"
+              />
+            ) : (
+              <CreateCompetitionWizard
+                clubs={clubs.map((club) => ({ id: club.id, name: club.name }))}
+                players={data.players.map((player) => ({
+                  displayName: player.displayName,
+                  id: player.id,
+                  rating: player.rating,
+                }))}
+              />
+            )}
+          </CardContent>
+        </Card>
       </main>
     </AppShell>
-  );
-}
-
-function Info({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-emerald-50 p-3 text-sm">
-      <div className="flex items-center gap-2 font-semibold text-emerald-950">
-        {icon}
-        {label}
-      </div>
-      <p className="mt-1 text-slate-600">{value}</p>
-    </div>
   );
 }

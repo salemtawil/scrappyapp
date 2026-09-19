@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
 import { hasSupabaseEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -47,7 +48,7 @@ export async function signInAction(_state: AuthActionState, formData: FormData):
   }
 
   revalidatePath("/", "layout");
-  redirect(parsed.data.next || "/dashboard");
+  redirect(safeInternalPath(parsed.data.next));
 }
 
 export async function signUpAction(_state: AuthActionState, formData: FormData): Promise<AuthActionState> {
@@ -89,7 +90,7 @@ export async function signUpAction(_state: AuthActionState, formData: FormData):
   }
 
   revalidatePath("/", "layout");
-  redirect(parsed.data.next || "/dashboard");
+  redirect(safeInternalPath(parsed.data.next));
 }
 
 export async function signOutAction() {

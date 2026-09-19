@@ -1,109 +1,36 @@
+import type { Metadata } from "next";
 import { AppShell } from "@/components/app-shell";
-import { addPlayerAction, deletePlayerAction, updatePlayerAction } from "@/app/players/actions";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { getPlayerLevelLabel, playerLevels } from "@/lib/players/levels";
+import { PlayerManager } from "@/components/players/player-manager";
+import { Alert } from "@/components/ui/alert";
 import { getPlayersData } from "@/lib/players/queries";
+
+export const metadata: Metadata = { title: "Jugadores" };
 
 export default async function PlayersPage() {
   const data = await getPlayersData();
+  const canManage = Boolean(data.configured && data.user && data.isAdmin);
 
   return (
     <AppShell>
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-emerald-950">Jugadores</h1>
-            <p className="mt-1 text-slate-600">Tu lista base para armar competiciones rapidamente.</p>
-          </div>
-        </div>
+      <main className="mx-auto max-w-4xl px-4 py-6">
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Jugadores</h1>
+        <p className="mt-1 text-muted-foreground">Tu lista base para montar competiciones rápido.</p>
+
         {!data.configured && (
-          <Card className="mt-5 border-amber-300 bg-amber-50">
-            <CardContent>
-              <p className="font-semibold text-amber-950">Modo demo activo</p>
-              <p className="mt-1 text-sm text-amber-900">
-                Con Supabase configurado podras crear jugadores reales desde esta pantalla.
-              </p>
-            </CardContent>
-          </Card>
+          <Alert className="mt-5" title="Modo demostración" tone="warning">
+            Con Supabase configurado podrás crear y editar jugadores reales desde esta pantalla.
+          </Alert>
         )}
-        {data.user && !data.isAdmin && (
-          <Card className="mt-5 border-red-200 bg-red-50">
-            <CardContent>
-              <p className="font-semibold text-red-950">Sin permiso de administrador</p>
-              <p className="mt-1 text-sm text-red-800">Tu usuario puede ver salas publicas, pero no gestionar jugadores.</p>
-            </CardContent>
-          </Card>
+        {data.configured && data.user && !data.isAdmin && (
+          <Alert className="mt-5" title="Sin permiso de administrador" tone="error">
+            Tu correo no está en <code>ADMIN_EMAILS</code>: puedes ver salas públicas, pero no gestionar
+            jugadores.
+          </Alert>
         )}
-        {data.user && data.isAdmin && (
-          <Card className="mt-5">
-            <CardHeader>
-              <h2 className="font-semibold">Agregar jugador</h2>
-            </CardHeader>
-            <CardContent>
-              <form action={addPlayerAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-                <Input name="displayName" placeholder="Nombre del jugador" required />
-                <Select aria-label="Nivel del jugador" defaultValue="0" name="rating" required>
-                  {playerLevels.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </Select>
-                <Button type="submit">Agregar</Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-        <Input className="mt-5" placeholder="Buscar jugador" />
-        <Card className="mt-5">
-          <CardHeader>
-            <h2 className="font-semibold">Jugadores registrados</h2>
-          </CardHeader>
-          <CardContent className="divide-y divide-emerald-950/10">
-            {data.players.length > 0 ? (
-              data.players.map((player) => (
-                <div key={player.id} className="grid gap-3 py-4 lg:grid-cols-[1fr_auto] lg:items-center">
-                  {data.user && data.isAdmin ? (
-                    <form action={updatePlayerAction} className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
-                      <input name="id" type="hidden" value={player.id} />
-                      <Input defaultValue={player.displayName} name="displayName" required />
-                      <Select aria-label={`Nivel de ${player.displayName}`} defaultValue={player.rating ?? 0} name="rating" required>
-                        {playerLevels.map((level) => (
-                          <option key={level.value} value={level.value}>
-                            {level.label}
-                          </option>
-                        ))}
-                      </Select>
-                      <Button variant="secondary" type="submit">
-                        Guardar
-                      </Button>
-                    </form>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{player.displayName}</span>
-                      <span className="text-sm text-slate-500">{getPlayerLevelLabel(player.rating)}</span>
-                    </div>
-                  )}
-                  {data.user && data.isAdmin && (
-                    <form action={deletePlayerAction}>
-                      <input name="id" type="hidden" value={player.id} />
-                      <Button className="w-full lg:w-auto" variant="danger" type="submit">
-                        Borrar
-                      </Button>
-                    </form>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="py-6 text-center text-sm text-slate-600">
-                Todavia no hay jugadores. Agrega el primero para preparar una competicion.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+        <div className="mt-5">
+          <PlayerManager canManage={canManage} players={data.players} />
+        </div>
       </main>
     </AppShell>
   );

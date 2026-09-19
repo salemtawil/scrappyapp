@@ -1,30 +1,25 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { productConfig } from "@/lib/config/product";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: productConfig.name,
-  description: "Organiza Americanos, Mexicanos, ligas y torneos de padel.",
+  title: {
+    default: productConfig.name,
+    template: `%s · ${productConfig.name}`,
+  },
+  description: "Organiza Americanos, Mexicanos, ligas y torneos de pádel con marcador en vivo.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f6f52",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="es" className="h-full antialiased">
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

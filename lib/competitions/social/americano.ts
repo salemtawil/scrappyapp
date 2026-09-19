@@ -1,3 +1,4 @@
+import { pickFairSitOuts } from "./rest-rotation";
 import { seededTieBreak } from "./seeded-rng";
 import type {
   GenerateSocialInput,
@@ -30,7 +31,13 @@ function generateAmericanoRound(
 ): SocialRound {
   const maxMatches = Math.min(input.courtCount, Math.floor(input.entries.length / 4));
   const activeCount = maxMatches * 4;
-  const sitOutEntryIds = pickSitOuts(input.entries, priorRounds, activeCount, input.seed, roundNumber);
+  const sitOutEntryIds = pickFairSitOuts({
+    entries: input.entries,
+    priorRounds,
+    roundNumber,
+    seed: input.seed,
+    sitOutCount: input.entries.length - activeCount,
+  });
   const sitOutSet = new Set(sitOutEntryIds);
   const active = input.entries.filter((entry) => !sitOutSet.has(entry.id));
   const partnerCounts = buildPairCounts(priorRounds, "partners");
@@ -53,39 +60,9 @@ function validateSocialInput(input: GenerateSocialInput) {
   if (input.courtCount < 1 || input.courtCount > 16) {
     throw new Error("Court count must be between 1 and 16.");
   }
-  if (input.targetPoints < 1 || input.targetPoints > 99) {
+  if (input.scoring.targetPoints < 1 || input.scoring.targetPoints > 99) {
     throw new Error("Target games must be between 1 and 99.");
   }
-}
-
-function pickSitOuts(
-  entries: SocialEntry[],
-  priorRounds: SocialRound[],
-  activeCount: number,
-  seed: string,
-  roundNumber: number,
-) {
-  const sitOutNeeded = entries.length - activeCount;
-  if (sitOutNeeded <= 0) return [];
-  const sitOutCounts = new Map(entries.map((entry) => [entry.id, 0]));
-  const lastSitOuts = new Set(priorRounds.at(-1)?.sitOutEntryIds ?? []);
-  for (const round of priorRounds) {
-    for (const entryId of round.sitOutEntryIds) {
-      sitOutCounts.set(entryId, (sitOutCounts.get(entryId) ?? 0) + 1);
-    }
-  }
-  return [...entries]
-    .sort((a, b) => {
-      const consecutivePenalty = Number(lastSitOuts.has(a.id)) - Number(lastSitOuts.has(b.id));
-      return (
-        (sitOutCounts.get(a.id) ?? 0) - (sitOutCounts.get(b.id) ?? 0) ||
-        consecutivePenalty ||
-        seededTieBreak(seed, `${roundNumber}:sit:${a.id}`) -
-          seededTieBreak(seed, `${roundNumber}:sit:${b.id}`)
-      );
-    })
-    .slice(0, sitOutNeeded)
-    .map((entry) => entry.id);
 }
 
 function buildRoundPairs(
@@ -118,7 +95,46 @@ function buildRoundPairs(
     const [second] = remaining.splice(bestIndex, 1);
     pairs.push([first, second]);
   }
-  return pairs;
+  return improvePairs(pairs, partnerCounts);
+}
+
+/**
+ * El emparejamiento voraz decide pareja a pareja y puede quedarse encerrado:
+ * con 8 jugadores repetía un compañero ya en la tercera ronda aunque quedaran
+ * combinaciones nuevas. Esta pasada intercambia miembros entre dos parejas
+ * siempre que baje el número de repeticiones, y solo acepta mejoras estrictas,
+ * así que el resultado sigue siendo determinista para una misma semilla.
+ */
+function improvePairs(pairs: Pair[], partnerCounts: Map<string, number>): Pair[] {
+  const cost = (a: SocialEntry, b: SocialEntry) => partnerCounts.get(pairKey(a.id, b.id)) ?? 0;
+  const result = [...pairs];
+  const maxPasses = 4;
+
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    let improved = false;
+    for (let i = 0; i < result.length; i += 1) {
+      for (let j = i + 1; j < result.length; j += 1) {
+        const [a, b] = result[i];
+        const [c, d] = result[j];
+        const current = cost(a, b) + cost(c, d);
+        if (current === 0) continue;
+        const swapFirst = cost(a, c) + cost(b, d);
+        const swapSecond = cost(a, d) + cost(b, c);
+        if (swapFirst < current && swapFirst <= swapSecond) {
+          result[i] = [a, c];
+          result[j] = [b, d];
+          improved = true;
+        } else if (swapSecond < current) {
+          result[i] = [a, d];
+          result[j] = [b, c];
+          improved = true;
+        }
+      }
+    }
+    if (!improved) break;
+  }
+
+  return result;
 }
 
 function pairIntoMatches(
@@ -153,10 +169,13 @@ function pairIntoMatches(
     matches.push({
       id: `americano-r${roundNumber}-m${courtNumber}`,
       roundNumber,
+      courtNumber,
       courtLabel: `Pista ${courtNumber}`,
       sideA: { entryIds: [first[0].id, first[1].id] },
       sideB: { entryIds: [second[0].id, second[1].id] },
-      targetPoints: input.targetPoints,
+      targetPoints: input.scoring.targetPoints,
+      scoringMode: input.scoring.mode,
+      status: "pending",
       stateVersion: 0,
     });
   }
